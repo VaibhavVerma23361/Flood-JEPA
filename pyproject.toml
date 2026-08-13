@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flood-jepa"
+version = "0.1.0"
+description = "V-JEPA 2.1 pretraining and flood-segmentation adapters for WorldFloods V2"
+requires-python = ">=3.11"
+dependencies = [
+  "einops",
+  "lmdb",
+  "numpy",
+  "PyYAML",
+  "timm",
+  "torch>=2.1",
+  "torchvision",
+  "tqdm",
+]
+
+[project.scripts]
+flood-jepa-pretrain = "flood_jepa.training.pretrain:main"
+flood-jepa-inspect-lmdb = "flood_jepa.data.worldfloods:main"
+flood-jepa-segment = "flood_jepa.training.segmentation:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

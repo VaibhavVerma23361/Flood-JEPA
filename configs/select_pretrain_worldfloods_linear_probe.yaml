@@ -1,0 +1,43 @@
+experiment:
+  name: select_flood_jepa_pretrain_weight_linear_probe
+  output_dir: results/worldfloods_pretrain_weight_selection/placeholder
+  seed: 42
+
+data:
+  train_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_train.lmdb
+  val_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_val.lmdb
+  crop_size: 256
+  input_bands: [B2, B3, B4, B5, B6, B7, B8, B8A, B11, B12]
+  normalization: worldfloods
+  augment_d4: true
+  minimum_supervised_fraction: 0.25
+  sample_retry_attempts: 20
+
+model:
+  pretrained_checkpoint: null
+  encoder_source: target
+  freeze_encoder: true
+  use_activation_checkpointing: false
+  decoder_type: linear
+
+loss:
+  use_class_weights: true
+  ce_weight: 0.5
+  dice_weight: 0.5
+
+optimization:
+  epochs: 15
+  per_device_batch_size: 8
+  num_workers: 8
+  encoder_learning_rate: 0.0
+  decoder_learning_rate: 0.0001
+  minimum_learning_rate: 0.000001
+  weight_decay: 0.0
+  gradient_clip_norm: 1.0
+  dtype: float16
+  pin_memory: true
+  persistent_workers: true
+  max_steps_per_epoch: null
+
+checkpoint:
+  resume: null

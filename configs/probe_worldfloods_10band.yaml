@@ -1,0 +1,41 @@
+experiment:
+  name: flood_jepa_worldfloods_frozen_probe
+  output_dir: results/frozen_probe/placeholder
+  seed: 42
+
+data:
+  train_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_train.lmdb
+  val_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_val.lmdb
+  test_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_test.lmdb
+  crop_size: 256
+  input_bands: [B2, B3, B4, B5, B6, B7, B8, B8A, B11, B12]
+  normalization: worldfloods
+  augment_d4: true
+
+model:
+  pretrained_checkpoint: null
+  encoder_source: target
+  freeze_encoder: true
+  use_activation_checkpointing: false
+  decoder_dim: 256
+
+loss:
+  use_class_weights: true
+  ce_weight: 0.5
+  dice_weight: 0.5
+
+optimization:
+  epochs: 20
+  per_device_batch_size: 8
+  num_workers: 8
+  encoder_learning_rate: 0.0
+  decoder_learning_rate: 0.0001
+  minimum_learning_rate: 0.000001
+  weight_decay: 0.05
+  gradient_clip_norm: 1.0
+  dtype: float16
+  pin_memory: true
+  persistent_workers: true
+
+checkpoint:
+  resume: null
