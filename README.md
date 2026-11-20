@@ -59,6 +59,19 @@ Panel (b) is flood segmentation. The context encoder and the predictor are disca
 | Segmentation loss | Cross-entropy + Dice + 0.5 focal, class weights from the training split |
 | Selection | Highest validation global mIoU, then one test evaluation |
 
+## Ablations
+
+A, B, and C change only the pretraining target. The encoder, the crop, the optimizer, and the downstream decoder stay the same. For the masked-only runs the visible-token weight is zero for the whole training run. One supervised depth uses the final block. Four depths use blocks 3, 6, 9, and 12. Each depth is layer-normalized before the loss is averaged, so four depths do not multiply the objective by four. The predictor's input projection is wider in the four-depth models, which is why the predictor is 2.26M parameters there and smaller when only the final block is supervised.
+
+| ID | Masked tokens | Visible tokens | Supervised depths | Config |
+| --- | --- | --- | --- | --- |
+| A | yes | no | final block | `configs/pretrain_vitt16_256_10band_h100_A.yaml` |
+| B | yes | yes | final block | `configs/pretrain_vitt16_256_10band_h100_B.yaml` |
+| C | yes | no | blocks 3, 6, 9, 12 | `configs/pretrain_vitt16_256_10band_h100_C.yaml` |
+| D | yes | yes | blocks 3, 6, 9, 12 | `configs/pretrain_vitt16_256_10band_h100.yaml` |
+
+D is the full Flood-JEPA model drawn in the figure.
+
 ## Setup
 
 Python 3.11 or newer. The numbers below were measured on one NVIDIA H100 with the CUDA 12.4 PyTorch wheel. A different GPU is fine if it can run BF16 and hold a ViT-Tiny plus SegUPerNet-512. The published batch sizes assume one GPU: 32 for pretraining and 14 for fine-tuning.
@@ -162,7 +175,7 @@ bash scripts/evaluate_vitt10_h100.sh
 
 ## Results
 
-WorldFloods v2 test set. Every system uses the same SegUPerNet-512 decoder width. Frozen means the encoder was pretrained and then held fixed. Sup. means the whole network was trained with flood labels. Encoder parameter counts leave out the decoder. The Flood-JEPA row is the mean of seeds 42, 11, and 22 from this repository. The other rows are the benchmark numbers for those models. They were not retrained here.
+WorldFloods v2 test set. Every system uses the same SegUPerNet-512 decoder width. Frozen means the encoder was pretrained and then held fixed. Sup. means the whole network was trained with flood labels. Encoder parameter counts leave out the decoder. The Flood-JEPA row is the best of seeds 42, 11, and 22 from this repository, which is seed 22. The other rows are the benchmark numbers for those models. They were not retrained here.
 
 | Method | Enc. params (M) | Track | mIoU | Land IoU | Water IoU | Water precision | Water recall | Water F1 |
 | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -171,13 +184,13 @@ WorldFloods v2 test set. Every system uses the same SegUPerNet-512 decoder width
 | DOFA ViT-B | 111.31 | Frozen | 86.11 | 91.37 | 80.86 | 91.85 | 87.10 | 89.41 |
 | CROMA-L Optical | 303.03 | Frozen | 86.03 | 91.32 | 80.74 | 91.84 | 86.98 | 89.34 |
 | TerraMind-L | ~305.66 | Frozen | 85.95 | 91.28 | 80.62 | 91.90 | 86.79 | 89.27 |
+| Flood-JEPA ViT-T/16 | 5.83 | Frozen | 85.84 | 91.13 | 80.56 | 90.88 | 87.65 | 89.23 |
 | Random ViT-B/16 | 87.17 | Sup. | 85.72 | 91.04 | 80.40 | 90.68 | 87.64 | 89.13 |
-| Flood-JEPA ViT-T/16 | 5.83 | Frozen | 85.62 | 91.00 | 80.24 | 90.85 | 87.30 | 89.04 |
 | DeepLabV3+ R50 | 23.53 | Sup. | 80.23 | 87.46 | 73.00 | 86.35 | 82.52 | 84.39 |
 | GFM-Swin | 86.73 | Frozen | 69.39 | 80.61 | 58.16 | 78.46 | 69.22 | 73.55 |
 | Scale-MAE ViT-L | 303.30 | Frozen | 68.33 | 80.06 | 56.60 | 78.09 | 67.29 | 72.29 |
 
-Flood-JEPA is the smallest encoder in the table. On this three-seed run it sits just below the larger frozen encoders and the supervised U-Net, and well above DeepLabV3+, GFM-Swin, and Scale-MAE. The three seeds were 85.58, 85.43, and 85.84 mIoU.
+Flood-JEPA is the smallest encoder in the table. This best run sits just below the larger frozen encoders and the supervised U-Net, and well above DeepLabV3+, GFM-Swin, and Scale-MAE.
 
 ## Layout
 
