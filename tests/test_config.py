@@ -63,26 +63,6 @@ def test_a30_vit_tiny_configs_are_size_locked(monkeypatch, tmp_path: Path):
     assert finetune["optimization"]["dtype"] == "bfloat16"
 
 
-def test_ablation_configs_change_only_the_supervision_ingredients():
-    masked = load_config("configs/pretrain_vitt16_256_10band_h100_A.yaml")
-    visible = load_config("configs/pretrain_vitt16_256_10band_h100_B.yaml")
-    deep = load_config("configs/pretrain_vitt16_256_10band_h100_C.yaml")
-    full = load_config("configs/pretrain_vitt16_256_10band_h100.yaml")
-    assert masked["model"]["deep_self_supervision_levels"] == 1
-    assert masked["loss"]["predict_all"] is False
-    assert masked["loss"]["context_weight"] == 0.0
-    assert visible["model"]["deep_self_supervision_levels"] == 1
-    assert visible["loss"]["predict_all"] is True
-    assert deep["model"]["deep_self_supervision_levels"] == 4
-    assert deep["loss"]["predict_all"] is False
-    assert full["loss"]["predict_all"] is True
-    assert full["model"]["deep_self_supervision_levels"] == 4
-    for config in (masked, visible, deep, full):
-        assert config["model"]["model_name"] == "vit_tiny"
-        assert config["optimization"]["per_device_batch_size"] == 32
-        assert config["optimization"]["epochs"] == 100
-
-
 def test_h100_vit_tiny_configs_match_the_reported_worldfloods_recipe(
     monkeypatch, tmp_path: Path
 ):

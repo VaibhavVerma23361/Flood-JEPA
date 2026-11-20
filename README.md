@@ -117,17 +117,6 @@ A five-step smoke run uses a separate output directory and does not overwrite a 
 bash scripts/run_vitt10_h100_pipeline.sh smoke
 ```
 
-To pretrain an ablation instead of D, point the launcher at that config and give it its own output directory:
-
-```bash
-export SEED=42
-export PRETRAIN_CONFIG="$PWD/configs/pretrain_vitt16_256_10band_h100_A.yaml"
-export PRETRAIN_OUTPUT="$PWD/results/h100/ablation/A/pretrain/seed_42"
-bash scripts/run_vitt10_h100_pretrain.sh pretrain
-```
-
-Swap the filename for `_B.yaml` or `_C.yaml` to run the other two.
-
 ## Fine-tuning
 
 This is panel (b). The EMA target encoder stays frozen. Only SegUPerNet-512 is trained, for 30 epochs at global batch 14, decoder learning rate `2e-5`, with a 3-epoch warm-up and a cosine schedule. The segmentation loss is cross-entropy plus Dice plus 0.5 focal. The checkpoint with the best validation global mIoU is saved as `best.pt`.
