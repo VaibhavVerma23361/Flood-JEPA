@@ -163,7 +163,7 @@ WorldFloods v2 test performance. Frozen means a pretrained encoder held fixed an
 | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | OLMoEarth-B | ~114.00 | Frozen | 86.90 | 91.77 | 82.03 | 91.25 | 89.04 | 90.13 |
 | U-Net | 9.41 | Sup. | 86.76 | 91.76 | 81.76 | 92.06 | 87.96 | 89.97 |
-| Flood-JEPA ViT-T/16 | 5.83 | Frozen | 86.48 | 91.57 | 81.38 | 91.81 | 87.75 | 89.74 |
+| Flood-JEPA ViT-T/16 (ours)| 5.83 | Frozen | 86.48 | 91.57 | 81.38 | 91.81 | 87.75 | 89.74 |
 | DOFA ViT-B | 111.31 | Frozen | 86.11 | 91.37 | 80.86 | 91.85 | 87.10 | 89.41 |
 | CROMA-L Optical | 303.03 | Frozen | 86.03 | 91.32 | 80.74 | 91.84 | 86.98 | 89.34 |
 | TerraMind-L | ~305.66 | Frozen | 85.95 | 91.28 | 80.62 | 91.90 | 86.79 | 89.27 |
