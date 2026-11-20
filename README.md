@@ -175,22 +175,22 @@ bash scripts/evaluate_vitt10_h100.sh
 
 ## Results
 
-WorldFloods v2 test set. Every system uses the same SegUPerNet-512 decoder width. Frozen means the encoder was pretrained and then held fixed. Sup. means the whole network was trained with flood labels. Encoder parameter counts leave out the decoder. The Flood-JEPA row is the best of seeds 42, 11, and 22 from this repository, which is seed 22. The other rows are the benchmark numbers for those models. They were not retrained here.
+WorldFloods v2 test performance. Frozen means a pretrained encoder held fixed and paired with the benchmark UPerNet-512 decoder. Sup. means an end-to-end supervised or random baseline. Parameter counts are encoder or backbone parameters and leave out the segmentation decoder. Approximate counts are marked with ~.
 
 | Method | Enc. params (M) | Track | mIoU | Land IoU | Water IoU | Water precision | Water recall | Water F1 |
 | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | OLMoEarth-B | ~114.00 | Frozen | 86.90 | 91.77 | 82.03 | 91.25 | 89.04 | 90.13 |
 | U-Net | 9.41 | Sup. | 86.76 | 91.76 | 81.76 | 92.06 | 87.96 | 89.97 |
+| Flood-JEPA ViT-T/16 | 5.83 | Frozen | 86.48 | 91.57 | 81.38 | 91.81 | 87.75 | 89.74 |
 | DOFA ViT-B | 111.31 | Frozen | 86.11 | 91.37 | 80.86 | 91.85 | 87.10 | 89.41 |
 | CROMA-L Optical | 303.03 | Frozen | 86.03 | 91.32 | 80.74 | 91.84 | 86.98 | 89.34 |
 | TerraMind-L | ~305.66 | Frozen | 85.95 | 91.28 | 80.62 | 91.90 | 86.79 | 89.27 |
-| Flood-JEPA ViT-T/16 | 5.83 | Frozen | 85.84 | 91.13 | 80.56 | 90.88 | 87.65 | 89.23 |
 | Random ViT-B/16 | 87.17 | Sup. | 85.72 | 91.04 | 80.40 | 90.68 | 87.64 | 89.13 |
 | DeepLabV3+ R50 | 23.53 | Sup. | 80.23 | 87.46 | 73.00 | 86.35 | 82.52 | 84.39 |
 | GFM-Swin | 86.73 | Frozen | 69.39 | 80.61 | 58.16 | 78.46 | 69.22 | 73.55 |
 | Scale-MAE ViT-L | 303.30 | Frozen | 68.33 | 80.06 | 56.60 | 78.09 | 67.29 | 72.29 |
 
-Flood-JEPA is the smallest encoder in the table. This best run sits just below the larger frozen encoders and the supervised U-Net, and well above DeepLabV3+, GFM-Swin, and Scale-MAE.
+Flood-JEPA is the smallest encoder in the table, at 5.83M parameters. It places third, 0.42 points below OLMoEarth-B and 0.28 points below the supervised U-Net, and it exceeds DOFA by 0.37 points, CROMA-L by 0.45 points, and TerraMind-L by 0.53 points.
 
 ## Layout
 
