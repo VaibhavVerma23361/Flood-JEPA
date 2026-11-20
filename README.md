@@ -59,19 +59,6 @@ Panel (b) is flood segmentation. The context encoder and the predictor are disca
 | Segmentation loss | Cross-entropy + Dice + 0.5 focal, class weights from the training split |
 | Selection | Highest validation global mIoU, then one test evaluation |
 
-## Ablations
-
-A, B, and C change only the pretraining target. The encoder, the crop, the optimizer, and the downstream decoder stay the same. For the masked-only runs the visible-token weight is zero for the whole training run. One supervised depth uses the final block. Four depths use blocks 3, 6, 9, and 12. Each depth is layer-normalized before the loss is averaged, so four depths do not multiply the objective by four. The predictor's input projection is wider in the four-depth models, which is why the predictor is 2.26M parameters there and smaller when only the final block is supervised.
-
-| ID | Masked tokens | Visible tokens | Supervised depths | Config |
-| --- | --- | --- | --- | --- |
-| A | yes | no | final block | `configs/pretrain_vitt16_256_10band_h100_A.yaml` |
-| B | yes | yes | final block | `configs/pretrain_vitt16_256_10band_h100_B.yaml` |
-| C | yes | no | blocks 3, 6, 9, 12 | `configs/pretrain_vitt16_256_10band_h100_C.yaml` |
-| D | yes | yes | blocks 3, 6, 9, 12 | `configs/pretrain_vitt16_256_10band_h100.yaml` |
-
-D is the full Flood-JEPA model drawn in the figure.
-
 ## Setup
 
 Python 3.11 or newer. The numbers below were measured on one NVIDIA H100 with the CUDA 12.4 PyTorch wheel. A different GPU is fine if it can run BF16 and hold a ViT-Tiny plus SegUPerNet-512. The published batch sizes assume one GPU: 32 for pretraining and 14 for fine-tuning.
