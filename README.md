@@ -184,7 +184,7 @@ Flood-JEPA is the smallest encoder in the table, at 5.83M parameters. It places 
 ```text
 assets/flood-jepa-arch.png     architecture figure used above
 flood-jepa-arch.pdf            same figure, vector PDF
-configs/                       pretraining and fine-tuning recipes, including A, B, and C
+configs/                       pretraining and fine-tuning recipes
 scripts/                       setup, LMDB packing, train, and evaluate
 src/flood_jepa/                stem, loss, data, and the segmentation loop
 tests/                         checks for the configs, the model, and the LMDB reader
