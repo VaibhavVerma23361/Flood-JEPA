@@ -63,6 +63,7 @@ optimization:
   dtype: float16
   pin_memory: true
   persistent_workers: true
+  max_steps_per_epoch: null
 
 checkpoint:
   save_every_epochs: 10

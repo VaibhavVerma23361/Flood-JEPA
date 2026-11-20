@@ -1,0 +1,50 @@
+experiment:
+  name: flood_jepa_worldfloods_dpt_segmentation_10band
+  output_dir: results/flood_jepa_worldfloods_dpt_10band/seed_42
+  seed: 42
+
+data:
+  train_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_train.lmdb
+  val_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_val.lmdb
+  test_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_test.lmdb
+  crop_size: 256
+  input_bands: [B2, B3, B4, B5, B6, B7, B8, B8A, B11, B12]
+  normalization: worldfloods
+  augment_d4: true
+  minimum_supervised_fraction: 0.25
+  sample_retry_attempts: 20
+
+model:
+  pretrained_checkpoint: ${FLOOD_JEPA_PRETRAINED}
+  encoder_source: target
+  freeze_encoder: false
+  use_activation_checkpointing: true
+  decoder_type: dpt
+  decoder_dim: 256
+  decoder_dropout: 0.1
+
+loss:
+  use_class_weights: true
+  ce_weight: 0.5
+  dice_weight: 0.5
+
+optimization:
+  epochs: 30
+  per_device_batch_size: 8
+  eval_per_device_batch_size: 8
+  num_workers: 8
+  encoder_learning_rate: 0.00001
+  decoder_learning_rate: 0.0001
+  scheduler: cosine
+  minimum_learning_rate: 0.000001
+  weight_decay: 0.05
+  gradient_clip_norm: 1.0
+  dtype: float16
+  pin_memory: true
+  persistent_workers: true
+  max_steps_per_epoch: null
+  validation_every_epochs: 1
+
+checkpoint:
+  save_every_epochs: 0
+  resume: null

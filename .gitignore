@@ -1,4 +1,3 @@
-# Python-generated files
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -6,34 +5,21 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 .ipynb_checkpoints/
-
-# Environments and secrets
 .venv/
-venv/
 .env
 .env.*
 !.env.example
-
-# Datasets and training outputs
-/data/
-/results/
-/checkpoints/
-*.lmdb
+data/
+results/
+checkpoints/
 *.pt
 *.pth
 *.pth.tar
-
-# Logs and process identifiers
+*.lmdb
 *.log
 *.pid
-training_rank0.jsonl
-pretraining_epoch_summary.csv
-
-# Generated archives
 *.zip
 
-# Editors and operating systems
-.vscode/
-.idea/
-.DS_Store
-/scripts/Untitled.ipynb
+# Locally generated training reports copied into the repository root.
+/training_rank0.jsonl
+/pretraining_epoch_summary.csv

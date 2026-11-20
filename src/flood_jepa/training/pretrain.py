@@ -22,7 +22,11 @@ from flood_jepa.config import apply_overrides, load_config, require_sections
 from flood_jepa.data.masks import WorldFloodsMaskCollator
 from flood_jepa.data.worldfloods import WorldFloodsPretrainDataset
 from flood_jepa.models.vjepa21 import build_flood_jepa
-from flood_jepa.training.losses import dense_jepa_loss, normalize_deep_targets
+from flood_jepa.training.losses import (
+    SketchedIsotropicGaussianRegularizer,
+    dense_jepa_loss,
+    normalize_deep_targets,
+)
 from flood_jepa.vendor import upstream_root
 
 
@@ -132,16 +136,27 @@ def _save_checkpoint(path: Path, model, optimizer, epoch: int, global_step: int,
         "config": config,
         "upstream_revision": _git_revision(upstream_root()),
     }
+    if unwrapped.sigreg_projector is not None:
+        payload["sigreg_projector"] = unwrapped.sigreg_projector.state_dict()
     temporary = path.with_suffix(path.suffix + ".tmp")
     torch.save(payload, temporary)
     temporary.replace(path)
 
 
 def _load_checkpoint(path: Path, model, optimizer) -> tuple[int, int]:
-    checkpoint = torch.load(path, map_location="cpu")
+    # Resume checkpoints contain optimizer/scheduler/config metadata in
+    # addition to tensors. Explicitly allow that trusted local payload under
+    # the PyTorch 2.6+ weights-only default.
+    checkpoint = torch.load(path, map_location="cpu", weights_only=False)
     model.online_encoder.load_state_dict(checkpoint["online_encoder"])
     model.target_encoder.load_state_dict(checkpoint["target_encoder"])
     model.predictor.load_state_dict(checkpoint["predictor"])
+    if model.sigreg_projector is not None:
+        if "sigreg_projector" not in checkpoint:
+            raise ValueError(
+                "SIGReg is enabled, but the resume checkpoint has no SIGReg projector state"
+            )
+        model.sigreg_projector.load_state_dict(checkpoint["sigreg_projector"])
     optimizer.load_state_dict(checkpoint["optimizer"])
     return int(checkpoint["epoch"]) + 1, int(checkpoint["global_step"])
 
@@ -161,6 +176,7 @@ def train(config: dict) -> None:
     data_cfg = config["data"]
     model_cfg = config["model"]
     loss_cfg = config["loss"]
+    sigreg_cfg = loss_cfg.get("sigreg", {})
     opt_cfg = config["optimization"]
     checkpoint_cfg = config["checkpoint"]
     seed = int(experiment.get("seed", 42))
@@ -222,7 +238,18 @@ def train(config: dict) -> None:
         model_cfg,
         image_size=int(data_cfg["crop_size"]),
         mask_count=len(config["mask"]),
+        sigreg_config=sigreg_cfg,
     ).to(device)
+    sigreg = None
+    if bool(sigreg_cfg.get("enabled", False)):
+        if int(opt_cfg["per_device_batch_size"]) < 2:
+            raise ValueError("SIGReg requires optimization.per_device_batch_size >= 2")
+        sigreg = SketchedIsotropicGaussianRegularizer(
+            num_projections=int(sigreg_cfg.get("num_projections", 256)),
+            num_knots=int(sigreg_cfg.get("num_knots", 17)),
+            t_max=float(sigreg_cfg.get("t_max", 3.0)),
+            seed=int(sigreg_cfg.get("seed", seed)),
+        ).to(device)
     optimizer = _optimizer(model, opt_cfg)
 
     start_epoch = 0
@@ -283,7 +310,7 @@ def train(config: dict) -> None:
                 dtype=autocast_dtype,
                 enabled=mixed_precision,
             ):
-                target, predicted, predicted_context = model(
+                target, predicted, predicted_context, sigreg_embeddings = model(
                     images,
                     masks_encoder,
                     masks_predictor,
@@ -294,7 +321,7 @@ def train(config: dict) -> None:
                         encoder_dim=unwrapped.info.encoder_dim,
                         levels=int(model_cfg.get("deep_self_supervision_levels", 4)),
                     )
-                loss, loss_parts = dense_jepa_loss(
+                jepa_loss, loss_parts = dense_jepa_loss(
                     predicted,
                     predicted_context,
                     target,
@@ -307,6 +334,14 @@ def train(config: dict) -> None:
                         loss_cfg.get("distance_weighted_context", True)
                     ),
                 )
+                if sigreg is not None:
+                    if sigreg_embeddings is None:
+                        raise RuntimeError("SIGReg is enabled but the model returned no embeddings")
+                    sigreg_loss = sigreg(sigreg_embeddings, step=global_step)
+                else:
+                    sigreg_loss = jepa_loss.new_zeros(())
+                sigreg_weight = float(sigreg_cfg.get("weight", 0.05))
+                loss = jepa_loss + sigreg_weight * sigreg_loss
 
             if scaler.is_enabled():
                 scaler.scale(loss).backward()
@@ -335,6 +370,7 @@ def train(config: dict) -> None:
                     loss=f"{float(loss.detach()):.4f}",
                     pred=f"{float(loss_parts['prediction']):.4f}",
                     context=f"{float(loss_parts['context']):.4f}",
+                    sigreg=f"{float(sigreg_loss.detach()):.4f}",
                     lr=f"{lr:.2e}",
                     ema=f"{momentum:.6f}",
                 )
@@ -345,9 +381,12 @@ def train(config: dict) -> None:
                     "iteration": iteration + 1,
                     "global_step": global_step,
                     "loss": float(loss.detach()),
+                    "jepa_loss": float(jepa_loss.detach()),
                     "prediction_loss": float(loss_parts["prediction"]),
                     "context_loss": float(loss_parts["context"]),
                     "context_weight": context_weight,
+                    "sigreg_loss": float(sigreg_loss.detach()),
+                    "sigreg_weight": sigreg_weight,
                     "learning_rate": lr,
                     "weight_decay": weight_decay,
                     "ema": momentum,

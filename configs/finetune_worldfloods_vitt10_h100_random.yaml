@@ -1,0 +1,95 @@
+experiment:
+  name: flood_jepa_vitt10_random_frozen_h100
+  output_dir: results/h100/ablation/R/finetune/seed_42
+  seed: 42
+distributed:
+  required_world_size: 1
+  global_batch_size: 14
+data:
+  train_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_train.lmdb
+  val_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_val.lmdb
+  test_lmdb: ${WORLDFLOODS_LMDB_DIR}/worldfloods_test.lmdb
+  crop_size: 256
+  input_bands:
+  - B2
+  - B3
+  - B4
+  - B5
+  - B6
+  - B7
+  - B8
+  - B8A
+  - B11
+  - B12
+  normalization: worldfloods
+  source_tile_size: 512
+  expected_tile_counts:
+    train: 21364
+    val: 751
+    test: 841
+  augment_d4: true
+  d4_probability: 0.5
+  rotate_probability: 0.2
+  rotate_limit_degrees: 90
+  crop_attempts: 10
+  minimum_supervised_fraction: 0.0
+  sample_retry_attempts: 1
+  train_source_manifest: null
+model:
+  pretrained_checkpoint: ${FLOOD_JEPA_PRETRAINED}
+  random_init: true
+  expected_pretrain_model_name: vit_tiny
+  expected_pretrain_input_channels: 10
+  expected_pretrain_patch_size: 16
+  expected_pretrain_crop_size: 256
+  encoder_source: target
+  freeze_encoder: true
+  use_activation_checkpointing: false
+  decoder_type: seg_upernet
+  decoder_dim: 512
+  decoder_dropout: 0.1
+  feature_layers:
+  - 2
+  - 5
+  - 8
+  - 11
+  pangaea_seg_upernet_revision: ca19b837a16797cd809225225b671473c7c93768
+loss:
+  use_class_weights: true
+  ce_weight: 1.0
+  dice_weight: 1.0
+  focal_weight: 0.5
+  focal_alpha: 0.25
+  focal_gamma: 2.0
+  ignore_index: 255
+optimization:
+  epochs: 30
+  per_device_batch_size: 14
+  eval_per_device_batch_size: 8
+  num_workers: 4
+  encoder_learning_rate: 0.0
+  decoder_learning_rate: 2.0e-05
+  betas:
+  - 0.9
+  - 0.999
+  epsilon: 1.0e-08
+  scheduler: cosine
+  warmup_epochs: 3
+  warmup_start_learning_rate: 0.0
+  minimum_learning_rate: 1.0e-06
+  weight_decay: 0.01
+  gradient_clip_norm: 1.0
+  dtype: bfloat16
+  pin_memory: true
+  persistent_workers: true
+  max_steps_per_epoch: null
+  validation_every_epochs: 1
+checkpoint:
+  save_every_epochs: 5
+  auto_resume: true
+  resume: null
+evaluation:
+  sliding_window_batch_size: 8
+  primary_metric: global_miou
+  save_per_sample_metrics: true
+  allow_repeat_test: false

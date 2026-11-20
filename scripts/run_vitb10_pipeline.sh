@@ -22,7 +22,7 @@ FLOOD_JEPA_TMPDIR="${FLOOD_JEPA_TMPDIR:-/tmp/flood-jepa-${USER:-worker}}"
 mkdir -p "${FLOOD_JEPA_TMPDIR}"
 export TMPDIR="${FLOOD_JEPA_TMPDIR}"
 
-PRETRAIN_CONFIG="${PROJECT_ROOT}/configs/pretrain_vitb16_256_10band.yaml"
+PRETRAIN_CONFIG="${PRETRAIN_CONFIG:-${PROJECT_ROOT}/configs/pretrain_vitb16_256_10band.yaml}"
 
 # Shared data hyperparameters.
 SEED="${SEED:-42}"
@@ -39,7 +39,7 @@ ENCODER_DIM="${ENCODER_DIM:-768}"
 PREDICTOR_DEPTH="${PREDICTOR_DEPTH:-12}"
 PREDICTOR_DIM="${PREDICTOR_DIM:-384}"
 PREDICTOR_HEADS="${PREDICTOR_HEADS:-12}"
-DEEP_SUPERVISION_LEVELS="${DEEP_SUPERVISION_LEVELS:-4}"
+DEEP_SUPERVISION_LEVELS="${DEEP_SUPERVISION_LEVELS:-}"
 USE_ROPE="${USE_ROPE:-true}"
 USE_SDPA="${USE_SDPA:-true}"
 UNIFORM_POWER="${UNIFORM_POWER:-true}"
@@ -55,11 +55,19 @@ MASK_FULL_COMPLEMENT="${MASK_FULL_COMPLEMENT:-false}"
 MASK_MAX_TEMPORAL_KEEP="${MASK_MAX_TEMPORAL_KEEP:-1.0}"
 MASK_MAX_KEEP="${MASK_MAX_KEEP:-null}"
 LOSS_EXPONENT="${LOSS_EXPONENT:-1.0}"
-PREDICT_ALL="${PREDICT_ALL:-true}"
+PREDICT_ALL="${PREDICT_ALL:-}"
 DISTANCE_WEIGHTED_CONTEXT="${DISTANCE_WEIGHTED_CONTEXT:-true}"
-CONTEXT_WEIGHT="${CONTEXT_WEIGHT:-0.5}"
+CONTEXT_WEIGHT="${CONTEXT_WEIGHT:-}"
 CONTEXT_WARMUP_START="${CONTEXT_WARMUP_START:-0.05}"
 CONTEXT_WARMUP_END="${CONTEXT_WARMUP_END:-0.10}"
+SIGREG_ENABLED="${SIGREG_ENABLED:-false}"
+SIGREG_WEIGHT="${SIGREG_WEIGHT:-0.05}"
+SIGREG_NUM_PROJECTIONS="${SIGREG_NUM_PROJECTIONS:-256}"
+SIGREG_NUM_KNOTS="${SIGREG_NUM_KNOTS:-17}"
+SIGREG_T_MAX="${SIGREG_T_MAX:-3.0}"
+SIGREG_PROJECTOR_HIDDEN_DIM="${SIGREG_PROJECTOR_HIDDEN_DIM:-2048}"
+SIGREG_PROJECTOR_OUTPUT_DIM="${SIGREG_PROJECTOR_OUTPUT_DIM:-128}"
+SIGREG_SEED="${SIGREG_SEED:-${SEED}}"
 
 # Pretraining optimization hyperparameters.
 PRETRAIN_EPOCHS="${PRETRAIN_EPOCHS:-100}"
@@ -86,6 +94,9 @@ PRETRAIN_OUTPUT="${PRETRAIN_OUTPUT:-${PROJECT_ROOT}/results/vjepa21_vitb16_world
 
 set_pretrain_overrides() {
   PRETRAIN_OVERRIDES=(
+    ${DEEP_SUPERVISION_LEVELS:+--override "model.deep_self_supervision_levels=${DEEP_SUPERVISION_LEVELS}"}
+    ${PREDICT_ALL:+--override "loss.predict_all=${PREDICT_ALL}"}
+    ${CONTEXT_WEIGHT:+--override "loss.context_weight=${CONTEXT_WEIGHT}"}
     --override "experiment.seed=${SEED}"
     --override "experiment.output_dir=${PRETRAIN_OUTPUT}"
     --override "data.crop_size=${CROP_SIZE}"
@@ -101,7 +112,6 @@ set_pretrain_overrides() {
     --override "model.predictor_depth=${PREDICTOR_DEPTH}"
     --override "model.predictor_dim=${PREDICTOR_DIM}"
     --override "model.predictor_heads=${PREDICTOR_HEADS}"
-    --override "model.deep_self_supervision_levels=${DEEP_SUPERVISION_LEVELS}"
     --override "model.use_rope=${USE_ROPE}"
     --override "model.use_sdpa=${USE_SDPA}"
     --override "model.uniform_power=${UNIFORM_POWER}"
@@ -115,11 +125,17 @@ set_pretrain_overrides() {
     --override "mask.0.spatial_scale=${MASK_SPATIAL_SCALE}"
     --override "mask.0.temporal_scale=${MASK_TEMPORAL_SCALE}"
     --override "loss.exponent=${LOSS_EXPONENT}"
-    --override "loss.predict_all=${PREDICT_ALL}"
     --override "loss.distance_weighted_context=${DISTANCE_WEIGHTED_CONTEXT}"
-    --override "loss.context_weight=${CONTEXT_WEIGHT}"
     --override "loss.context_warmup_start_fraction=${CONTEXT_WARMUP_START}"
     --override "loss.context_warmup_end_fraction=${CONTEXT_WARMUP_END}"
+    --override "loss.sigreg.enabled=${SIGREG_ENABLED}"
+    --override "loss.sigreg.weight=${SIGREG_WEIGHT}"
+    --override "loss.sigreg.num_projections=${SIGREG_NUM_PROJECTIONS}"
+    --override "loss.sigreg.num_knots=${SIGREG_NUM_KNOTS}"
+    --override "loss.sigreg.t_max=${SIGREG_T_MAX}"
+    --override "loss.sigreg.projector_hidden_dim=${SIGREG_PROJECTOR_HIDDEN_DIM}"
+    --override "loss.sigreg.projector_output_dim=${SIGREG_PROJECTOR_OUTPUT_DIM}"
+    --override "loss.sigreg.seed=${SIGREG_SEED}"
     --override "optimization.epochs=${PRETRAIN_EPOCHS}"
     --override "optimization.per_device_batch_size=${PRETRAIN_BATCH_PER_GPU}"
     --override "optimization.num_workers=${PRETRAIN_WORKERS}"
@@ -150,6 +166,7 @@ print_run() {
   echo "Local temporary directory: ${TMPDIR}"
   echo "Model: ${MODEL_NAME}, ${INPUT_CHANNELS} bands, ${CROP_SIZE}px, patch ${PATCH_SIZE}"
   echo "Predictor: depth ${PREDICTOR_DEPTH}, width ${PREDICTOR_DIM}, heads ${PREDICTOR_HEADS}"
+  echo "SIGReg: enabled=${SIGREG_ENABLED}, weight=${SIGREG_WEIGHT}, projections=${SIGREG_NUM_PROJECTIONS}, projector=${SIGREG_PROJECTOR_HIDDEN_DIM}->${SIGREG_PROJECTOR_OUTPUT_DIM}"
   echo "Pretrain: ${PRETRAIN_EPOCHS} epochs, batch/GPU ${PRETRAIN_BATCH_PER_GPU}, global batch $((PRETRAIN_BATCH_PER_GPU * NPROC_PER_NODE)), LR ${PRETRAIN_LR}, ${PRETRAIN_DTYPE}"
 }
 
@@ -180,7 +197,7 @@ case "${PHASE}" in
     PRETRAIN_WORKERS="${SMOKE_WORKERS:-2}"
     PRETRAIN_WARMUP_EPOCHS=0
     PRETRAIN_MAX_STEPS_PER_EPOCH="${SMOKE_STEPS:-5}"
-    PRETRAIN_OUTPUT="${PROJECT_ROOT}/results/smoke_vitb16_worldfloods_10band/seed_${SEED}"
+    PRETRAIN_OUTPUT="${SMOKE_OUTPUT:-${PROJECT_ROOT}/results/smoke_vitb16_worldfloods_10band/seed_${SEED}}"
     GPU_IDS="${SELECTED_GPUS[0]}"
     CUDA_VISIBLE_DEVICES="${SELECTED_GPUS[0]}"
     NPROC_PER_NODE=1
