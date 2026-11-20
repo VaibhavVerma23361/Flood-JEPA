@@ -1,5 +1,11 @@
 # Flood-JEPA
 
+**Accepted as an oral** at the Young Research Symposium, [ACM IKDD CODS 2026](https://cods.org.in/), 13–16 December 2026, Gandhinagar, India.
+
+Vaibhav Verma, Mohammedkaif Mohammedrafiq Kalagond, and Rajal Lunkad. Indian Institute of Science Education and Research Bhopal.
+
+*Flood-JEPA: Dense Joint-Embedding Prediction for Multispectral Flood Mapping.* Submission 145, non-archival YRS track.
+
 Flood-JEPA learns flood-extent mapping from Sentinel-2 without reconstructing pixels. It is inspired by [V-JEPA 2.1](https://arxiv.org/abs/2603.14482): a context encoder sees a masked view, an exponential-moving-average target encoder sees the full view, and a small predictor matches the target's latent tokens. The target is stop-gradient. Nothing in pretraining is a label.
 
 What Flood-JEPA adds is the flood setting. The stem takes ten Sentinel-2 bands. The loss supervises four encoder depths, not only the last block, and it predicts the visible tokens as well as the masked ones. After pretraining, the context encoder and the predictor are discarded. The frozen target encoder, 5.83M parameters, feeds a SegUPerNet-512 decoder that is trained to draw the land and water mask.
