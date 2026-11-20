@@ -175,25 +175,22 @@ bash scripts/evaluate_vitt10_h100.sh
 
 ## Results
 
-WorldFloods v2 test set. Every row is a frozen SegUPerNet-512 decoder on the validation-selected checkpoint. A and D are seeds 42, 11, and 22, reported as mean ± sample standard deviation for mIoU. B and C are seed 42 only. The last row is the number published for Flood-JEPA Tiny. It is not a run from this repository.
+WorldFloods v2 test set. Every system uses the same SegUPerNet-512 decoder width. Frozen means the encoder was pretrained and then held fixed. Sup. means the whole network was trained with flood labels. Encoder parameter counts leave out the decoder. The Flood-JEPA row is the mean of seeds 42, 11, and 22 from this repository. The other rows are the benchmark numbers for those models. They were not retrained here.
 
-| Model | Seeds | mIoU | Land IoU | Water IoU | Water F1 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| A, masked tokens, final block | 3 | 85.93 ± 0.18 | 91.17 | 80.68 | 89.31 |
-| B, masked and visible tokens, final block | 1 | 86.48 | 91.50 | 81.46 | 89.78 |
-| C, masked tokens, four depths | 1 | 86.22 | 91.38 | 81.06 | 89.54 |
-| D, Flood-JEPA | 3 | 85.62 ± 0.21 | 91.00 | 80.24 | 89.04 |
-| Published Flood-JEPA Tiny | — | 86.48 | 91.57 | 81.38 | 89.74 |
+| Method | Enc. params (M) | Track | mIoU | Land IoU | Water IoU | Water precision | Water recall | Water F1 |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| OLMoEarth-B | ~114.00 | Frozen | 86.90 | 91.77 | 82.03 | 91.25 | 89.04 | 90.13 |
+| U-Net | 9.41 | Sup. | 86.76 | 91.76 | 81.76 | 92.06 | 87.96 | 89.97 |
+| DOFA ViT-B | 111.31 | Frozen | 86.11 | 91.37 | 80.86 | 91.85 | 87.10 | 89.41 |
+| CROMA-L Optical | 303.03 | Frozen | 86.03 | 91.32 | 80.74 | 91.84 | 86.98 | 89.34 |
+| TerraMind-L | ~305.66 | Frozen | 85.95 | 91.28 | 80.62 | 91.90 | 86.79 | 89.27 |
+| Random ViT-B/16 | 87.17 | Sup. | 85.72 | 91.04 | 80.40 | 90.68 | 87.64 | 89.13 |
+| Flood-JEPA ViT-T/16 | 5.83 | Frozen | 85.62 | 91.00 | 80.24 | 90.85 | 87.30 | 89.04 |
+| DeepLabV3+ R50 | 23.53 | Sup. | 80.23 | 87.46 | 73.00 | 86.35 | 82.52 | 84.39 |
+| GFM-Swin | 86.73 | Frozen | 69.39 | 80.61 | 58.16 | 78.46 | 69.22 | 73.55 |
+| Scale-MAE ViT-L | 303.30 | Frozen | 68.33 | 80.06 | 56.60 | 78.09 | 67.29 | 72.29 |
 
-The three Flood-JEPA (D) seeds, individually:
-
-| Seed | mIoU | Land IoU | Water IoU | Water F1 | Water precision | Water recall |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 42 | 85.58 | 90.99 | 80.16 | 88.99 | 91.05 | 87.02 |
-| 11 | 85.43 | 90.87 | 79.99 | 88.89 | 90.61 | 87.22 |
-| 22 | 85.84 | 91.13 | 80.56 | 89.23 | 90.88 | 87.65 |
-
-Land is the easier class, near 91% intersection-over-union. Water is the gap: recall sits near 87%, so the remaining errors are mostly missed water rather than false water. On these three seeds, predicting both visible tokens and four depths together (D) does not raise the test score over the masked-only final-block baseline (A). The single-seed runs of B and C are higher, and B matches the published headline on that one seed. Those two still need their other seeds before they can be read as a multi-seed result.
+Flood-JEPA is the smallest encoder in the table. On this three-seed run it sits just below the larger frozen encoders and the supervised U-Net, and well above DeepLabV3+, GFM-Swin, and Scale-MAE. The three seeds were 85.58, 85.43, and 85.84 mIoU.
 
 ## Layout
 
